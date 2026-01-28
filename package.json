@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^8.4.0",
+    "@prisma/adapter-pg": "^7.3.0",
     "@prisma/client": "^7.3.0",
     "@supabase/ssr": "github:supabase/ssr",
     "@supabase/supabase-js": "^2.93.2",
@@ -20,6 +21,8 @@
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
     "next": "^16.1.6",
+    "pg": "^8.17.2",
+    "pnpm": "^10.28.2",
     "posthog-js": "^1.335.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -30,10 +33,12 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/node": "^25.1.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "playwright": "^1.58.0",
     "prisma": "^6.19.2",
+    "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
 }
