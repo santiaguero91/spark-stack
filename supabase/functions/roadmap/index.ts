@@ -5,11 +5,6 @@ import { PROJECTS_QUERY } from "./query.ts";
 
 const LINEAR_GRAPHQL = "https://api.linear.app/graphql";
 
-const supabase = createClient(
-  Deno.env.get("PROJECT_URL")!,
-  Deno.env.get("SERVICE_SECRET_KEY")!,
-);
-
 async function fetchFromLinear(initiativeId: string) {
   const res = await fetch(LINEAR_GRAPHQL, {
     method: "POST",
@@ -22,9 +17,6 @@ async function fetchFromLinear(initiativeId: string) {
       variables: { initiativeId },
     }),
   });
-
-  console.log("HOLAAAAAAAAAAAAA22222222222222A");
-  console.log("res", res);
 
   const data = await res.json();
   return data;
