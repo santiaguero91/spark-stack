@@ -13,7 +13,11 @@ import { useEffect, useRef } from "react";
 async function fetchIssues(projectId: string) {
   console.log("projectId", projectId);
 
-  const res = await fetch(`/api/linear/issues?projectId=${projectId}`);
+  //const res = await fetch(`/api/linear/issues?projectId=${projectId}`);
+  const res = await fetch(
+    `http://127.0.0.1:54321/functions/v1/issues/?projectIds=${projectId}`,
+  );
+
   if (!res.ok) throw new Error("Failed to fetch issues");
   return res.json();
 }

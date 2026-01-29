@@ -1,4 +1,4 @@
-import { redis } from "@/lib/redis/redis";
+/* import { redis } from "@/lib/redis/redis";
 import { linearClient } from "../linear/LinearClient";
 
 type RoadmapParams = {
@@ -95,4 +95,4 @@ export async function getRoadMap({ initiativeId }: RoadmapParams) {
 
   console.log("📡 returning FRESH DATA");
   return fresh;
-}
+} */

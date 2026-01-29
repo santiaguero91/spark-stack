@@ -21,7 +21,8 @@ export default function RoadmapPage() {
     queryKey: ["roadmap", initiativeId],
     queryFn: async () => {
       const res = await fetch(
-        `/api/linear/roadmap?initiativeId=${initiativeId}`,
+        //`/api/linear/roadmap?initiativeId=${initiativeId}`,
+        `http://127.0.0.1:54321/functions/v1/roadmap/?initiativeId=${initiativeId}`,
       );
       if (!res.ok) throw new Error("Failed to fetch roadmap");
       return res.json();
@@ -39,7 +40,7 @@ export default function RoadmapPage() {
 
       return (project.projectMilestones?.nodes ?? []).map((milestone: any) => ({
         ...milestone,
-        projectName, 
+        projectName,
       }));
     });
 
