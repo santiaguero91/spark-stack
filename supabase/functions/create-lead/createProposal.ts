@@ -15,20 +15,27 @@ import {
   DEFAULT_TEAM,
   DEFAULT_TOTAL_INVESTMENT,
   DEFAULT_WHY_THIS_STACK,
-} from "./proposalDefaultValues.js";
+} from "./proposalDefaultValues.ts";
+import { supabase } from "../client.ts";
+import { CreateProposalInputSchema } from "./zod.ts";
+import { ProposalSchema } from "../proposals/zod.ts";
 
-const supabase = createClient(
-  Deno.env.get("PROJECT_URL")!,
-  Deno.env.get("SERVICE_SECRET_KEY")!,
-);
+export const createProposal = async (
+  input: z.infer<typeof CreateProposalInputSchema>,
+) => {
+  // ✅ Validate input
+  const parsedInput = CreateProposalInputSchema.safeParse(input);
 
-export const createProposal = async ({
-  lead_id,
-  creator_email,
-}: {
-  lead_id: string;
-  creator_email: string;
-}) => {
+  if (!parsedInput.success) {
+    console.error(
+      "[createProposal] Invalid input:",
+      parsedInput.error.flatten(),
+    );
+    throw new Error("Invalid createProposal input");
+  }
+
+  const { lead_id, creator_email } = parsedInput.data;
+
   // Deno-native crypto
   const proposalId = crypto.randomUUID();
 
@@ -64,10 +71,21 @@ export const createProposal = async ({
     .select()
     .single();
 
-  if (error) {
+  if (error || !proposal) {
     console.error("[createProposal] Supabase error:", error);
-    throw error;
+    throw new Error("Failed to create proposal");
+  }
+  console.log("proposal", proposal);
+
+  const parsedProposal = ProposalSchema.safeParse(proposal);
+
+  if (!parsedProposal.success) {
+    console.error(
+      "[createProposal] Invalid proposal shape:",
+      parsedProposal.error,
+    );
+    throw new Error("Invalid proposal returned from database");
   }
 
-  return proposal;
+  return parsedProposal.data;
 };

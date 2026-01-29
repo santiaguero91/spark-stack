@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { Resend } from "https://esm.sh/resend@3";
-import { WelcomeProposalTemplateHtml } from "./WelcomeProposalTemplateHtml.js";
+import { WelcomeProposalTemplateHtml } from "./WelcomeProposalTemplateHtml.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_KEY")!);
 

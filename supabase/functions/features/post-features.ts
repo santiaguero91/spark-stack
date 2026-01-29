@@ -1,10 +1,25 @@
 // create-requirements.ts
 // @ts-nocheck
 import { supabase } from "../client.ts";
+import { CreateRequirementsSchema } from "./zod.js";
 
 export async function createRequirements(req: Request): Promise<Response> {
   try {
     const body = await req.json();
+
+    // ✅ Validate request body
+    const parsed = CreateRequirementsSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return new Response(
+        JSON.stringify({
+          error: "Invalid request body",
+          details: parsed.error.flatten(),
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
     const {
       proposal_id,
       submission_id,
@@ -16,21 +31,7 @@ export async function createRequirements(req: Request): Promise<Response> {
       budget_max,
       description,
       lead_id,
-    } = body;
-
-    if (!proposal_id) {
-      return new Response(
-        JSON.stringify({ error: "proposal_id is required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
-    }
-
-    if (!Array.isArray(features)) {
-      return new Response(
-        JSON.stringify({ error: "features must be an array" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
-    }
+    } = parsed.data;
 
     /* -----------------------------
        Insert requirements
@@ -38,7 +39,7 @@ export async function createRequirements(req: Request): Promise<Response> {
     const { error: insertError, count } = await supabase
       .from("requirements")
       .insert(
-        features.map((item: any) => ({
+        features.map((item) => ({
           proposal_id,
           submission_id,
           feature_name: item.title ?? null,

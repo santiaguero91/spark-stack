@@ -1,22 +1,28 @@
 // fetch-features.ts
 // @ts-nocheck
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { supabase } from "../client.ts";
+import { FeaturesSchema, QuerySchema } from "./zod.js";
 
 export async function fetchFeatures(req: Request): Promise<Response> {
   try {
     const url = new URL(req.url);
-    const submission_id = url.searchParams.get("submission_id");
 
-    if (!submission_id) {
+    // ✅ Validate query params
+    const parsedQuery = QuerySchema.safeParse({
+      submission_id: url.searchParams.get("submission_id"),
+    });
+
+    if (!parsedQuery.success) {
       return new Response(
-        JSON.stringify({ error: "submission_id is required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        },
+        JSON.stringify({
+          error: "Invalid query params",
+          details: parsedQuery.error.flatten(),
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
+
+    const { submission_id } = parsedQuery.data;
 
     const { data, error } = await supabase
       .from("requirements")
@@ -40,14 +46,23 @@ export async function fetchFeatures(req: Request): Promise<Response> {
       console.error("[fetch-features] Supabase error:", error);
       return new Response(
         JSON.stringify({ error: "Failed to fetch features" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        },
+        { status: 500, headers: { "Content-Type": "application/json" } },
       );
     }
 
-    return new Response(JSON.stringify(data ?? []), {
+    // ✅ Validate DB response
+    const parsedData = FeaturesSchema.safeParse(data ?? []);
+
+    if (!parsedData.success) {
+      console.error("[fetch-features] Invalid DB shape:", parsedData.error);
+
+      return new Response(
+        JSON.stringify({ error: "Invalid data returned from database" }),
+        { status: 500, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    return new Response(JSON.stringify(parsedData.data), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });

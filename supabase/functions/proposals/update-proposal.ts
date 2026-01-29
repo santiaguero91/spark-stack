@@ -1,16 +1,20 @@
 // update-proposal.ts
 // @ts-nocheck
 import { supabase } from "../client.ts";
+import { UpdateProposalBodySchema } from "./zod.js";
 
 export async function updateProposal(req: Request): Promise<Response> {
   try {
     const body = await req.json();
-    const { passcode, updates } = body;
 
-    if (!passcode || !updates || typeof updates !== "object") {
+    // ✅ Validate request body
+    const parsed = UpdateProposalBodySchema.safeParse(body);
+
+    if (!parsed.success) {
       return new Response(
         JSON.stringify({
-          error: "passcode and updates object are required",
+          error: "Invalid request body",
+          details: parsed.error.flatten(),
         }),
         {
           status: 400,
@@ -19,7 +23,10 @@ export async function updateProposal(req: Request): Promise<Response> {
       );
     }
 
+    const { passcode, updates } = parsed.data;
+
     const { lead, ...proposalUpdates } = updates;
+
     const { data: updatedRows, error: updateError } = await supabase
       .from("proposals")
       .update({

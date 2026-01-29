@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std/http/server.ts";
 import { getByPasscode } from "./get-by-passcode.ts";
 import { updateProposal } from "./update-proposal.ts";
+import { signProposal } from "./sign-proposal.ts";
 
 serve(async (req) => {
   const url = new URL(req.url);
@@ -12,6 +13,9 @@ serve(async (req) => {
 
   if (req.method === "PATCH") {
     return updateProposal(req);
+  }
+  if (req.method === "POST") {
+    return signProposal(req);
   }
 
   return new Response("Not found", { status: 404 });

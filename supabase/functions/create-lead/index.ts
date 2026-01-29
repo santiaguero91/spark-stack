@@ -1,37 +1,15 @@
 // @ts-nocheck
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { createProposal } from "./createProposal.js";
-import { sendWelcomeMail } from "./sendWelcomeEmail.js";
+import { createProposal } from "./createProposal.ts";
+import { sendWelcomeMail } from "./sendWelcomeEmail.ts";
+import { supabase } from "../client.ts";
+import { CreateSubmissionSchema } from "./zod.ts";
 
-const supabase = createClient(
-  Deno.env.get("PROJECT_URL")!,
-  Deno.env.get("SERVICE_SECRET_KEY")!,
-);
+/* -------------------------------------------------
+ * 1. (Optional) Cal.com booking
+ * ------------------------------------------------- */
 
-Deno.serve(async (req) => {
-  if (req.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
-  }
-  console.log("HOLAAAAAAAAAAAAAAAAAAA");
-
-  try {
-    const body = await req.json();
-
-    if (!body.selectedTime?.start || !body.selectedTime?.end) {
-      return new Response(
-        JSON.stringify({ error: "Missing selectedTime.start or end" }),
-        { status: 400 },
-      );
-    }
-
-    const startDate = new Date(body.selectedTime.start);
-    const leadId = crypto.randomUUID();
-
-    /* -------------------------------------------------
-     * 1. (Optional) Cal.com booking
-     * ------------------------------------------------- */
-
-    /* const bookingRes = await fetch("https://api.cal.com/v2/bookings", {
+/* const bookingRes = await fetch("https://api.cal.com/v2/bookings", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -44,6 +22,36 @@ Deno.serve(async (req) => {
     const bookingData = await bookingRes.json();
     const schedulingUrl = bookingData?.data?.meetingUrl ?? body.scheduling_url; */
 
+Deno.serve(async (req) => {
+  if (req.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
+  }
+
+  try {
+    const body = await req.json();
+
+    // ✅ Validate request body
+    const parsed = CreateSubmissionSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return new Response(
+        JSON.stringify({
+          error: "Invalid request body",
+          details: parsed.error.flatten(),
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const data = parsed.data;
+
+    const startDate = new Date(data.selectedTime.start);
+    const leadId = crypto.randomUUID();
+
+    /* -------------------------------------------------
+     * 1. Scheduling (hardcoded for now)
+     * ------------------------------------------------- */
+
     const schedulingUrl = "https://cal.com/kabir-malkani-glnivq/15min";
 
     /* -------------------------------------------------
@@ -54,15 +62,15 @@ Deno.serve(async (req) => {
       .from("leads")
       .insert({
         lead_id: leadId,
-        first_name: body.name,
-        email: body.email,
-        company: body.companyName,
-        industry: body.industry,
-        budget_min: body.monthlybudget?.min,
-        budget_max: body.monthlybudget?.max,
-        estimateTime_min: body.estimateTimeline?.min,
-        estimateTime_max: body.estimateTimeline?.max,
-        description: body.productIdea,
+        first_name: data.name,
+        email: data.email,
+        company: data.companyName,
+        industry: data.industry,
+        budget_min: data.monthlybudget?.min,
+        budget_max: data.monthlybudget?.max,
+        estimateTime_min: data.estimateTimeline?.min,
+        estimateTime_max: data.estimateTimeline?.max,
+        description: data.productIdea,
         formatted_date: startDate,
         scheduling_url: schedulingUrl,
         booking_status: "confirmed",
@@ -73,15 +81,13 @@ Deno.serve(async (req) => {
 
     if (leadError) {
       console.error("Failed to insert lead:", leadError);
-      return new Response(JSON.stringify({ error: leadError.message }), {
+      return new Response(JSON.stringify({ error: "Failed to create lead" }), {
         status: 500,
       });
     }
 
-    console.log("lead created", lead);
-
     /* -------------------------------------------------
-     * 3. Proposal + email (left as-is)
+     * 3. Proposal + email
      * ------------------------------------------------- */
 
     try {
@@ -90,14 +96,13 @@ Deno.serve(async (req) => {
         creator_email: lead.email,
       });
 
-      const responseEmail = await sendWelcomeMail({
-        email: body.email,
-        name: body.name,
+      await sendWelcomeMail({
+        email: data.email,
+        name: data.name,
         leadId: lead.lead_id,
         schedulingUrl,
         proposalLink: `http://localhost:4321/proposal?mode=features&passcode=${proposalData.passcode}`,
       });
-      console.log("responseEmail", responseEmail);
 
       await supabase
         .from("leads")
@@ -125,8 +130,8 @@ Deno.serve(async (req) => {
       },
     );
   } catch (err: any) {
-    console.error("[supabase] Error creating submission:", err.message);
-    return new Response(JSON.stringify({ error: err.message }), {
+    console.error("[supabase] Error creating submission:", err);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
     });
   }
